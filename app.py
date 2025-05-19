@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template
 from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 import datetime
@@ -7,46 +7,41 @@ app = Flask(__name__)
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-# Simple HTML form for input
-FORM = """
-<h2>Synthetic Monitoring</h2>
-<form method="POST">
-  URL to monitor: <input name="url" type="text" required><br><br>
-  Check frequency (minutes): 
-  <select name="interval">
-    <option value="15">Every 15 minutes</option>
-    <option value="30">Every 30 minutes</option>
-    <option value="60">Every 60 minutes</option>
-  </select><br><br>
-  <input type="submit" value="Start Monitoring">
-</form>
-<p>{{ message }}</p>
-"""
+monitoring_jobs = {}
 
-# Monitor function
 def check_url(url):
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     try:
         response = requests.get(url, timeout=10)
-        status = response.status_code
-        if status == 200:
-            print(f"[{now}] ✅ {url} is UP")
-        else:
-            print(f"[{now}] ❌ {url} returned status code {status}")
-    except Exception as e:
-        print(f"[{now}] ❌ ERROR checking {url}: {str(e)}")
+        status = 'UP' if response.status_code == 200 else 'DOWN'
+    except Exception:
+        status = 'DOWN'
+
+    monitoring_jobs[url]['status'] = status
+    monitoring_jobs[url]['last_checked'] = now
+    print(f"[{now}] {url} is {status}")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    message = ""
+
     if request.method == "POST":
         url = request.form["url"]
         interval = int(request.form["interval"])
 
-        # Remove existing job (if any)
-        scheduler.remove_all_jobs()
+        if url in monitoring_jobs:
+            message = f"{url} is already being monitored."
+        else:
+            monitoring_jobs[url] = {"status": "Not Checked", "last_checked": "—"}
+            scheduler.add_job(check_url, 'interval', [url], minutes=interval, id=url)
+            message = f"Started monitoring {url} every {interval} minutes."
 
-        # Schedule the new job
-        scheduler.add_job(check_url, 'interval', [url], minutes=interval, id='monitor')
+    # Convert dict to list for easier template rendering
+    jobs = [
+        {"url": url, "status": data["status"], "last_checked": data["last_checked"]}
+        for url, data in monitoring_jobs.items()
+    ]
+    return render_template("index.html", jobs=jobs, message=message)
 
-        return render_template_string(FORM, message=f"Started monitoring {url} every {interval} minutes.")
-    return render_template_string(FORM, message="")
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
