@@ -12,11 +12,12 @@ monitoring_jobs = {}
 def check_url(url):
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15, verify=False, allow_redirects=True)
         status = 'UP' if response.status_code == 200 else 'DOWN'
-    except Exception:
+    except Exception as e:
+        print(f"Error checking {url}: {e}")
         status = 'DOWN'
-
+        
     monitoring_jobs[url]['status'] = status
     monitoring_jobs[url]['last_checked'] = now
     print(f"[{now}] {url} is {status}")

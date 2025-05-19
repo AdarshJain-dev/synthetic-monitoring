@@ -42,6 +42,7 @@
         <th>URL</th>
         <th>Status</th>
         <th>Last Checked</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -56,6 +57,12 @@
           {% endif %}
         </td>
         <td>{{ job.last_checked }}</td>
+        <td>
+        <form method="POST" action="/delete" style="display:inline;">
+            <input type="hidden" name="url" value="{{ job.url }}" />
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+        </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -67,7 +74,7 @@
 </div>
 
 <footer class="text-center text-muted mt-5 mb-3">
-  <small>Built by <b>Adarsh Jain</b> — DevOps Automation Engineer</small>
+  <small>Built by <b>Adarsh Jain</b> — DevOpsEngineer</small>
 </footer>
 
 </body>
