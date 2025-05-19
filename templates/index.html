@@ -1,81 +1,104 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synthetic Monitoring</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthetic Monitoring Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+        }
+        .navbar-brand {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .badge {
+            font-size: 0.9em;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Synthetic Monitoring Tool</a>
+        </div>
+    </nav>
 
-<nav class="navbar navbar-dark bg-dark mb-4">
-  <div class="container-fluid">
-    <span class="navbar-brand mb-0 h1">🔍 Synthetic Monitoring Tool</span>
-  </div>
-</nav>
+    <div class="container">
+        {% if message %}
+            <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
 
-<div class="container">
-  <h3 class="mb-3">Add a URL to Monitor</h3>
-  <form method="POST" class="row g-3">
-    <div class="col-md-6">
-      <input type="text" name="url" class="form-control" placeholder="https://example.com" required />
-    </div>
-    <div class="col-md-3">
-      <select name="interval" class="form-select">
-        <option value="15">Every 15 minutes</option>
-        <option value="30">Every 30 minutes</option>
-        <option value="60">Every 60 minutes</option>
-      </select>
-    </div>
-    <div class="col-md-3">
-      <button type="submit" class="btn btn-primary">Add Monitor</button>
-    </div>
-  </form>
-
-  <hr class="my-4">
-
-  <h4 class="mb-3">Monitored URLs</h4>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>URL</th>
-        <th>Status</th>
-        <th>Last Checked</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for job in jobs %}
-      <tr>
-        <td>{{ job.url }}</td>
-        <td>
-          {% if job.status == 'UP' %}
-          <span class="badge bg-success">UP</span>
-          {% else %}
-          <span class="badge bg-danger">DOWN</span>
-          {% endif %}
-        </td>
-        <td>{{ job.last_checked }}</td>
-        <td>
-        <form method="POST" action="/delete" style="display:inline;">
-            <input type="hidden" name="url" value="{{ job.url }}" />
-            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+        <h2 class="mb-3">Add a URL to Monitor</h2>
+        <form method="POST" class="row g-3">
+            <div class="col-md-6">
+                <input type="url" name="url" class="form-control" placeholder="https://example.com" required>
+            </div>
+            <div class="col-md-4">
+                <select name="interval" class="form-select">
+                    <option value="5">Every 5 minutes</option>
+                    <option value="15" selected>Every 15 minutes</option>
+                    <option value="30">Every 30 minutes</option>
+                    <option value="60">Every 60 minutes</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Add Monitor</button>
+            </div>
         </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
 
-  {% if message %}
-  <div class="alert alert-info mt-3">{{ message }}</div>
-  {% endif %}
-</div>
+        <hr>
+        <h3 class="mb-3">Monitored URLs</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Last Checked</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>{{ job.url }}</td>
+                    <td>
+                        {% if job.status == 'UP' %}
+                            <span class="badge bg-success">UP</span>
+                        {% elif job.status == 'DOWN' %}
+                            <span class="badge bg-danger">DOWN</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Checked</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ job.last_checked }}</td>
+                    <td>
+                        <form method="POST" action="/delete">
+                            <input type="hidden" name="url" value="{{ job.url }}">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-<footer class="text-center text-muted mt-5 mb-3">
-  <small>Built by <b>Adarsh Jain</b> — DevOpsEngineer</small>
-</footer>
-
+        <footer>
+            Built by <strong>Adarsh Jain</strong> — DevOps Engineer
+        </footer>
+    </div>
 </body>
 </html>
