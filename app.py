@@ -1,31 +1,52 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from db import init_db, get_all_endpoints, add_endpoint, delete_endpoint_by_id
-import threading
-from monitor import monitor_job
+from flask import Flask, request, render_template_string
+from apscheduler.schedulers.background import BackgroundScheduler
+import requests
+import datetime
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+scheduler = BackgroundScheduler()
+scheduler.start()
 
-@app.route('/')
+# Simple HTML form for input
+FORM = """
+<h2>Synthetic Monitoring</h2>
+<form method="POST">
+  URL to monitor: <input name="url" type="text" required><br><br>
+  Check frequency (minutes): 
+  <select name="interval">
+    <option value="15">Every 15 minutes</option>
+    <option value="30">Every 30 minutes</option>
+    <option value="60">Every 60 minutes</option>
+  </select><br><br>
+  <input type="submit" value="Start Monitoring">
+</form>
+<p>{{ message }}</p>
+"""
+
+# Monitor function
+def check_url(url):
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        response = requests.get(url, timeout=10)
+        status = response.status_code
+        if status == 200:
+            print(f"[{now}] ✅ {url} is UP")
+        else:
+            print(f"[{now}] ❌ {url} returned status code {status}")
+    except Exception as e:
+        print(f"[{now}] ❌ ERROR checking {url}: {str(e)}")
+
+@app.route("/", methods=["GET", "POST"])
 def index():
-    endpoints = get_all_endpoints()
-    return render_template('index.html', endpoints=endpoints)
+    if request.method == "POST":
+        url = request.form["url"]
+        interval = int(request.form["interval"])
 
-@app.route('/add', methods=['POST'])
-def add():
-    name = request.form['name']
-    url = request.form['url']
-    add_endpoint(name, url)
-    flash('Endpoint added successfully!')
-    return redirect(url_for('index'))
+        # Remove existing job (if any)
+        scheduler.remove_all_jobs()
 
-@app.route('/delete/<int:id>')
-def delete(id):
-    delete_endpoint_by_id(id)
-    flash('Endpoint deleted!')
-    return redirect(url_for('index'))
+        # Schedule the new job
+        scheduler.add_job(check_url, 'interval', [url], minutes=interval, id='monitor')
 
-if __name__ == '__main__':
-    init_db()
-    threading.Thread(target=monitor_job, daemon=True).start()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        return render_template_string(FORM, message=f"Started monitoring {url} every {interval} minutes.")
+    return render_template_string(FORM, message="")
