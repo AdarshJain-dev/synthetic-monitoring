@@ -17,7 +17,7 @@ def check_url(url):
     except Exception as e:
         print(f"Error checking {url}: {e}")
         status = 'DOWN'
-        
+
     monitoring_jobs[url]['status'] = status
     monitoring_jobs[url]['last_checked'] = now
     print(f"[{now}] {url} is {status}")
@@ -41,6 +41,22 @@ def index():
     jobs = [
         {"url": url, "status": data["status"], "last_checked": data["last_checked"]}
         for url, data in monitoring_jobs.items()
+    ]
+    return render_template("index.html", jobs=jobs, message=message)
+
+@app.route("/delete", methods=["POST"])
+def delete_url():
+    url = request.form["url"]
+    if url in monitoring_jobs:
+        scheduler.remove_job(url)
+        del monitoring_jobs[url]
+        message = f"Stopped monitoring {url}"
+    else:
+        message = "URL not found."
+
+    jobs = [
+        {"url": u, "status": data["status"], "last_checked": data["last_checked"]}
+        for u, data in monitoring_jobs.items()
     ]
     return render_template("index.html", jobs=jobs, message=message)
 
